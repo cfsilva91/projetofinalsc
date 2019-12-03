@@ -1,6 +1,6 @@
 pragma solidity 0.5.13;
 
-// Este SC simula um termo de audiência de conciliação COM ACORDO
+// Este SC simula um termo de audiência de conciliação COM ACORDO!
 
     contract AcordoConciliacao {
         
@@ -8,30 +8,29 @@ pragma solidity 0.5.13;
         string public advogadoAutor;
         string public reu;
         string public juizConciliador;
-        
         address payable public contaAutor;
         address payable public contaAdvogadoAutor;
         address payable public contaReu;
         address public homologacaoJuizConciliador;
-        
-        uint public valorAcordo;
+        uint public valorAcordoTermo;
         uint public percentualPgtoAVista;
+        uint public dataLimitePagamento;
         uint private percentualAdvogadoAutor;
         uint private valorDevidoAutor;
-
         bool public acordoConciliacao;
         bool public valorAcordoPago;
         bool public valorAcordoRetirado;
         
-        event pagamentoRealizado (uint valor);
+        event pagamentoRealizado (uint valor); 
+        event pagamentoMultaAcordo (uint valor);
         
         modifier autorizadoRecebimento () {
-            require (msg.sender == autor || msg.sender == advogadoAutor, "Operaçao exclusiva do advogado da parte autora");
+            require (msg.sender == contaAutor || msg.sender == contaAdvogadoAutor, "Operaçao exclusiva do advogado da parte autora");
             _;    
         }
         
         modifier homologacaoJuiz () {
-            require (msg.sender == juizConciliador || msg.sender == reu, "Homologação do Juiz Presidente do Gabinete de Conciliação");
+            require (msg.sender == homologacaoJuizConciliador || msg.sender == contaReu, "Homologação do Juiz Presidente do Gabinete de Conciliação");
             _;
         }
         
@@ -40,7 +39,8 @@ pragma solidity 0.5.13;
             string memory _juizConciliador, 
             string memory _advogadoAutor, 
             string memory _reu, 
-            uint256 _valorDoAcordo, 
+            uint256 _valorDoAcordo,
+            uint256 _valorAcordoDesconto,
             uint256 _percentualAdvogadoAutor, 
             address payable _contaAutor, 
             address payable _contaAdvogadoAutor, 
@@ -49,10 +49,10 @@ pragma solidity 0.5.13;
             
             {
                 autor = _autor;
-                advogadoAutor = msg.sender;
+                advogadoAutor = _advogadoAutor;
                 juizConciliador = _juizConciliador;
                 reu = _reu;
-                valorAcordo = _valorDoAcordo;
+                valorAcordoTermo = _valorDoAcordo;
                 contaAutor = _contaAutor;
                 contaAdvogadoAutor = _contaAdvogadoAutor;
                 contaReu = _contaReu;
@@ -62,55 +62,46 @@ pragma solidity 0.5.13;
         
         function pagamentoAcordo () payable public {
                 require(msg.sender == contaReu, "Aguardando pagamento do valor determinado no acordo de conciliação");
-                require(msg.value != valorAcordo, "Valor incorreto. Efetuar o pagamento determinado no acordo de conciliação");
-                seguroAcordoPago = true;
-        
+                require(msg.value != valorAcordoTermo, "Valor incorreto. Efetuar o pagamento determinado no acordo de conciliação");
+                valorAcordoPago = true;
         }
-        
-    //    function pagamentoParcelado () public payable homologacaoJuiz {
-    //        require (now <= dataVencimentoParcela, "Aguardando pagamento da parcela");
-    //        require (msg.value == valorAcordo, "Valor diverso do indicado no acordo");
-    //        pago = true;
-    //        emit pagamentoRealizado(msg.value);
-    //    }
         
          function distribuicaoDeValores() public autorizadoRecebimento {
             require(valorAcordoPago == false, "Aguardando pagamento");
             require(valorAcordoRetirado == false, "Distribuição já realizada.");
+            percentualAdvogadoAutor = ((valorAcordoTermo * 10)/100);
+            valorDevidoAutor = percentualAdvogadoAutor - valorAcordoTermo;
             
-            valorDevidoAutor = (percentualAdvogadoAutor - address(this).balance);
-            
-            autor.transfer(valorDevidoAutor);
+            autor.transfer(address(this).balance);
             advogadoAutor.transfer(address(this).balance);
             valorAcordoRetirado = true;
         }
     
-        function pagarSeguroAluguel () payable public {
-                require(msg.sender == contaLocatario, "Somente Locatario pode efetuar o pagamento");
-                require(msg.value >= valorSeguroAluguel, "Valor insuficiente");
-                seguroAluguelPago = true;
-            }
+        function descontoPagamento () payable public {
+            require(msg.sender == contaReu, "O pagamento deve ser efetuado pelo réu");
+            require(msg.value >= valorAcordoPago, "Valor insuficiente");
+            valorAcordoPago = true;
+        }
         
-            function pagamentoNoPrazo () public payable somenteLocador {
-                require (now <= dataDeVencimento, "Devedor em mora.");
-                require (msg.value == valorAluguel, "Valor diverso do devido");
-                parcelasPagas ++;
-                emit pagamentoRealizado(msg.value);
-            }
+        function pagamentoNoPrazo() public payable autorizadoRecebimento {
+            require (now > dataLimitePagamento, "ATENÇÃO: Pagamento realizado fora do prazo!");
+            require (msg.value != valorAcordoTermo, "Valor não compatível com acordo");
+            valorAcordoPago ++;
+            emit pagamentoRealizado(msg.value);
+        }
     
-            function pagarMulta() public payable  {
-                require(msg.sender == contaLocatario, "Somente Locatario pode efetuar o pagamento");
-                require(msg.value >= 3* valorAluguel, "Valor insuficiente");
-                seguroAluguelPago = true;
-                emit pagamentoMulta(msg.value);
-            }
+        function pagarMulta() public payable  {
+            require(msg.sender == contaReu, "Somente o polo passivo pode efetuar o pagamento");
+            require(msg.value <= ((valorAcordoTermo*10)/100), "Valor insuficiente");
+            valorAcordoPago = true;
+            emit pagamentoMultaAcordo(msg.value);
+        }
     
             function fimDoContrato() public {
-                require(msg.sender == homologacaoJuizConciliador, "Somente o juízo poderá alterar o status do contrato");
-                if (seguroAluguelPago == true && numeroDeParcelas == parcelasPagas) {
+                require(msg.sender == homologacaoJuizConciliador, "O cumprimento do acordo de conciliação encerra o contrato");
+                if (valorAcordoPago == true && valorAcordoRetirado == true) {
                 acordoConciliacao = false;
                 contaReu.transfer(address(this).balance);
-               }
-            }
-     
+        }
     }
+}
