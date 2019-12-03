@@ -13,9 +13,9 @@ function getContractBalance() {
     })
     .catch( (err) => {
         console.error(err);
-        alert("A screen will be load asking to allow this page to connect with your Ethereum account.\nPlease give this permission to proceed.\nOr if you don't have an Ethereum account please install Metamask");
+        alert("Uma solicitação para fornecer acesso à sua conta Ethereum aparecerá em uma nova janela. \nFavor autorizar a solicitação para continuar\nOr caso você não possua uma conta Ethereum, instale o Metamask");
         ethereum.enable();
-        alert("After you give the permission we are going to reload the page");
+        alert("A página será recarregada após ");
         document.location = "index.html";
     });
 }
