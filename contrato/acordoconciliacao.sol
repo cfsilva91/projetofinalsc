@@ -2,7 +2,7 @@ pragma solidity 0.5.13;
 
 // Este SC simula um termo de audiência de conciliação COM ACORDO!
 
-    contract AcordoConciliacao {
+    contract termoConciliacao {
         
         string public autor;
         string public advogadoAutor;
@@ -40,12 +40,10 @@ pragma solidity 0.5.13;
             string memory _advogadoAutor, 
             string memory _reu, 
             uint256 _valorDoAcordo,
-            uint256 _valorAcordoDesconto,
             uint256 _percentualAdvogadoAutor, 
             address payable _contaAutor, 
             address payable _contaAdvogadoAutor, 
-            address payable _contaReu, 
-            address _homologacaoJuizConciliador) public
+            address payable _contaReu ) public
             
             {
                 autor = _autor;
@@ -72,21 +70,21 @@ pragma solidity 0.5.13;
             percentualAdvogadoAutor = ((valorAcordoTermo * 10)/100);
             valorDevidoAutor = percentualAdvogadoAutor - valorAcordoTermo;
             
-            autor.transfer(address(this).balance);
-            advogadoAutor.transfer(address(this).balance);
+            contaAutor.transfer(address(this).balance);
+            contaAdvogadoAutor.transfer(address(this).balance);
             valorAcordoRetirado = true;
         }
     
         function descontoPagamento () payable public {
             require(msg.sender == contaReu, "O pagamento deve ser efetuado pelo réu");
-            require(msg.value >= valorAcordoPago, "Valor insuficiente");
+            require(msg.value >= valorAcordoTermo, "Valor insuficiente");
             valorAcordoPago = true;
         }
         
         function pagamentoNoPrazo() public payable autorizadoRecebimento {
             require (now > dataLimitePagamento, "ATENÇÃO: Pagamento realizado fora do prazo!");
             require (msg.value != valorAcordoTermo, "Valor não compatível com acordo");
-            valorAcordoPago ++;
+            valorAcordoTermo ++;
             emit pagamentoRealizado(msg.value);
         }
     
