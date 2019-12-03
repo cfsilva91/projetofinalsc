@@ -1,1 +1,29 @@
+h1 {
+  font-family: "Century Gothic", sans-serif;  
+  color: #007A33;
+  font-weight: bold;
+}
 
+h3 {
+  font-family: "Calibri";
+    color: ##002F6C;
+}
+
+#tituloform {
+    font-style: oblique;
+}
+
+#subtituloform {
+    font-style: italic;
+}
+
+.titulo {
+  background-color: #FFFFFF
+
+.corpo {
+    background-color: #FFFFFF;
+}
+
+body {
+    background-color: #97999F;
+}
